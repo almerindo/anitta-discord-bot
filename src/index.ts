@@ -1,5 +1,5 @@
-import s from './error/teste';
+import {startBot} from "./client/bot"
 
-console.log('Boilerplate');
-console.log('Boilerplate');
-s('teste');
+
+startBot();
+
