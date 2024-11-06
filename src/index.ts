@@ -1,6 +1,8 @@
 import { Client, GatewayIntentBits, Collection } from 'discord.js';
 import { loadCommands } from './bot/loader';
+import { hasPermission } from './bot/permissions';
 import dotenv from 'dotenv';
+import { IBotCommand } from './bot/IBotCommand';
 
 dotenv.config();
 
@@ -12,11 +14,11 @@ const client: ExtendedClient = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent // Adiciona a intenção para acessar o conteúdo das mensagens
+        GatewayIntentBits.MessageContent,
     ],
 }) as ExtendedClient;
 
-client.commands = new Collection(); // Inicialize a coleção de comandos
+client.commands = new Collection();
 
 client.once('ready', () => {
     console.log(`Bot is ready as ${client.user?.tag}!`);
@@ -29,26 +31,28 @@ const prefix = '!';
 loadCommands(client);
 
 client.on('messageCreate', async (message) => {
-    console.info(`Message: ${message.content}`); // Mostra o conteúdo da mensagem
+    console.info(`Message: ${message.content}`);
 
     if (message.author.bot) return;
 
-    // Verifique se a mensagem começa com o prefixo
     if (!message.content.startsWith(prefix)) return;
 
-    // Remova o prefixo e separe o comando e os argumentos
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift()?.toLowerCase() as string;
 
     console.info(`Command: ${commandName}`);
-    const command = client.commands.get(commandName);
+    const command = client.commands.get(commandName) as IBotCommand;
 
     if (command) {
-        try {
-            await command.execute(message, args);
-        } catch (error) {
-            console.error(error);
-            message.reply('Ocorreu um erro ao executar o comando.');
+        if (hasPermission(command, message)) {
+            try {
+                await command.execute(message, args);
+            } catch (error) {
+                console.error(error);
+                message.reply('Ocorreu um erro ao executar o comando.');
+            }
+        } else {
+            message.reply('Você não possui permissão para usar este comando.');
         }
     }
 });
