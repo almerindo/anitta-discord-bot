@@ -22,10 +22,10 @@
   },
   "scripts": {
     "clean": "rimraf coverage build tmp",
-    "build": "tsc",
+    "build": "tsc && find dist -name '*.d.ts' -type f -delete",
     "dev": "ts-node-dev --ignore-watch node_modules src/index.ts",
     "test": "jest --no-cache",
-    "start": "ts-node src/index.ts"
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "@types/jest": "^29.4.0",

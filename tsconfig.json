@@ -19,5 +19,5 @@
     "resolveJsonModule": true                 /* Permite importar arquivos JSON. */
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/*.test.ts"]
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.d.ts"]
 }
