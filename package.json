@@ -24,7 +24,8 @@
     "clean": "rimraf coverage build tmp",
     "build": "tsc",
     "dev": "ts-node-dev --ignore-watch node_modules src/index.ts",
-    "test": "jest --no-cache"
+    "test": "jest --no-cache",
+    "start": "ts-node src/index.ts"
   },
   "dependencies": {
     "@types/jest": "^29.4.0",
