@@ -3,11 +3,11 @@ import fs from 'fs';
 import path from 'path';
 
 export function loadCommands(client: Client & { commands: Collection<string, any> }) {
-    const commandDir = path.join(__dirname, '../command');
+    const commandDir = path.join(__dirname, '../commands');
     const commandFiles = fs.readdirSync(commandDir).filter(file => file.endsWith('.ts') || file.endsWith('.js'));
 
     for (const file of commandFiles) {
-        const commandModule = require(`../command/${file}`);
+        const commandModule = require(`../commands/${file}`);
         const command = commandModule.command;
 
         // Verifique se o comando foi exportado corretamente e possui um nome

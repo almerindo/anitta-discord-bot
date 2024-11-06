@@ -1,5 +1,5 @@
 import { Message } from 'discord.js';
-import {command} from '../command/ping';
+import {command} from '../commands/ping';
 
 describe('Comando ping', () => {
     it('responde com Pong!', async () => {

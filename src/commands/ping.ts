@@ -1,7 +1,7 @@
 import { Message } from 'discord.js';
-import { BotCommand } from './IBotCommand';
+import { IBotCommand } from '../bot/IBotCommand';
 
-export const command: BotCommand = {
+export const command: IBotCommand = {
     name: 'ping',
     description: 'Responde com Pong!',
     allowedBy: new Set(['all']), // Permissão para todos

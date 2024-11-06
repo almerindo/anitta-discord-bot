@@ -1,7 +1,7 @@
 import { Message } from 'discord.js';
-import { BotCommand } from './IBotCommand';
+import { IBotCommand } from '../bot/IBotCommand';
 
-export const command: BotCommand = {
+export const command: IBotCommand = {
     name: 'hello',
     description: 'Verifica o cargo do usuário e responde de acordo.',
     allowedBy: new Set(['staff', 'oreia-seca']),

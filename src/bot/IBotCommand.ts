@@ -1,6 +1,6 @@
 import { Message } from 'discord.js';
 
-export interface BotCommand {
+export interface IBotCommand {
     name: string;
     description: string;
     allowedBy?: Set<string>;
