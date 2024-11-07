@@ -6,9 +6,15 @@ import { TodoService } from '../../services/todo/todo.service';
 const todoService = new TodoService();
 
 export const command: IBotCommand = {
+    group: 'todo',
     name: 'task-add',
     description: 'Adiciona uma nova tarefa à lista TODO do usuário.',
     allowedBy: new Set(['all']),
+    usage: `
+**!task-add** \`<código> <descrição>\`
+- Adiciona uma nova tarefa à sua lista.
+- **Exemplo**: \`!task-add T123 Revisar documentação\`
+`,
 
     async execute(message: Message, args: string[]) {
         const [code, ...descriptionParts] = args;

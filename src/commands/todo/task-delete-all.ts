@@ -6,9 +6,15 @@ import { TodoService } from '../../services/todo/todo.service';
 const todoService = new TodoService();
 
 export const command: IBotCommand = {
+    group: 'todo',
     name: 'task-delete-all',
     description: 'Deleta todas as tarefas do usuário.',
     allowedBy: new Set(['all']),
+    usage: `
+**!task-delete-all**
+- Apaga todas as tarefas associadas ao usuário.
+- **Exemplo**: \`!task-delete-all\`
+`,
 
     async execute(message: Message) {
         try {

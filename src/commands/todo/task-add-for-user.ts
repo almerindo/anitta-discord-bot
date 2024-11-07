@@ -6,9 +6,15 @@ import { TodoService } from '../../services/todo/todo.service';
 const todoService = new TodoService();
 
 export const command: IBotCommand = {
+    group: 'todo',
     name: 'task-add-for-user',
     description: 'Adiciona uma tarefa para outro usuário especificado.',
-    allowedBy: new Set(['staff', 'bug-catcher']), // Apenas staff e bug-catcher podem executar
+    allowedBy: new Set(['staff', 'bug-catcher']),
+    usage: `
+**!task-add-for-user** \`<@userId> <código> <descrição>\`
+- (Apenas para staff e bug-catcher) Adiciona uma nova tarefa para o usuário especificado.
+- **Exemplo**: \`!task-add-for-user @user123 T456 Revisar documento final\`
+`,
 
     async execute(message: Message, args: string[]) {
         // Validação de permissões

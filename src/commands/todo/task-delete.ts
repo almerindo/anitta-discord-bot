@@ -6,9 +6,15 @@ import { TodoService } from '../../services/todo/todo.service';
 const todoService = new TodoService();
 
 export const command: IBotCommand = {
+    group: 'todo',
     name: 'task-delete',
     description: 'Deleta uma tarefa pelo código.',
     allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca', ]),
+    usage: `
+**!task-delete** \`<código>\`
+- Remove uma tarefa específica pelo código.
+- **Exemplo**: \`!task-delete T123\`
+`,
 
     async execute(message: Message, args: string[]) {
         const [code] = args;

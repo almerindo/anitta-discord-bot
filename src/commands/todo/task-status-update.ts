@@ -7,9 +7,15 @@ import { ETodoStatus } from '../../services/todo/models/todo.model';
 const todoService = new TodoService();
 
 export const command: IBotCommand = {
+    group: 'todo',
     name: 'task-status-update',
     description: 'Atualiza o status de uma tarefa para todo, doing ou done.',
     allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca', ]),
+    usage: `
+**!task-status-update** \`<código> <todo|doing|done>\`
+- Atualiza o status de uma tarefa específica.
+- **Exemplo**: \`!task-status-update T123 done\`
+`,
 
     async execute(message: Message, args: string[]) {
         const [code, status] = args;

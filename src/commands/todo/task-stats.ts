@@ -7,9 +7,15 @@ import { randomMessage } from '../../bot/messages';
 const todoService = new TodoService();
 
 export const command: IBotCommand = {
+    group: 'todo',
     name: 'task-stats',
     description: 'Mostra estatísticas das tarefas por usuário, agrupadas por status.',
     allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca']),
+    usage: `
+**!task-stats**
+- Mostra estatísticas das tarefas agrupadas por status.
+- **Exemplo**: \`!task-stats\`
+`,
 
     async execute(message: Message) {
         let statistics;

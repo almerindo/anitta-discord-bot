@@ -3,9 +3,16 @@ import { IBotCommand } from '../bot/botcommand.interface';
 import { randomMessage } from '../bot/messages';
 
 export const command: IBotCommand = {
+    group: 'general',
     name: 'hello',
     description: 'Verifica o cargo do usuário e responde de acordo.',
     allowedBy: new Set(['staff', 'oreia-seca', 'bug-catcher']),
+    usage: `
+**!hello**
+- Verifica o cargo do usuário e responde de acordo.
+- **Exemplo**: \`!hello\`
+`,
+
 
     async execute(message: Message, args: string[]) {
         if (!message.member) {

@@ -6,9 +6,15 @@ import { TodoService } from '../../services/todo/todo.service';
 const todoService = new TodoService();
 
 export const command: IBotCommand = {
+    group: 'todo',
     name: 'task-list',
     description: 'Lista todas as tarefas do usuário.',
     allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca', ]),
+    usage: `
+**!task-list**
+- Lista todas as tarefas associadas ao usuário.
+- **Exemplo**: \`!task-list\`
+`,
 
     async execute(message: Message) {
       console.info(message.author);
