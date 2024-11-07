@@ -37,7 +37,6 @@ export const command: IBotCommand = {
             helpMessage += '\n'; // Separador entre grupos
         }
 
-        console.info(helpMessage);
         message.reply(helpMessage);
     },
 };

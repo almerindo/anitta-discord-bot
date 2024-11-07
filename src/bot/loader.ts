@@ -72,7 +72,6 @@ export async function loadSlashCommands(client: Client & { commands: Collection<
     const commandDir = path.join(__dirname, '../commands');
     const commands = await loadCommandsFromDirectory(commandDir, commandDir, true);
 
-    console.info({commands});
     const rest = new REST({ version: '10' }).setToken(token);
 
     try {
@@ -86,10 +85,7 @@ export async function loadSlashCommands(client: Client & { commands: Collection<
     // Armazenar Slash Commands em client.commands
     const commandModules = await loadCommandsFromDirectory(commandDir, commandDir, true);
 
-    // console.info({commandModules});
     for (const commandModule of commandModules) {
-
-      // console.info({commandModule});
 
         if (commandModule && 'execute' in commandModule) {
           const command = commandModule as IBotSlashCommand;
