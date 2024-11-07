@@ -12,6 +12,8 @@
     /* Strict Type-Checking Options */
     "strict": true,                           /* Habilita todas as verificações de tipo estritas. */
 
+    "allowSyntheticDefaultImports": true,
+
     /* Module Resolution Options */
     "esModuleInterop": true,                  /* Permite interoperabilidade entre CommonJS e ES Modules. */
     "skipLibCheck": true,                     /* Ignora verificação de tipos em arquivos de biblioteca para evitar erros com dependências. */

@@ -1,5 +1,5 @@
 import { Message } from 'discord.js';
-import { IBotCommand } from './IBotCommand';
+import { IBotCommand } from './botcommand.interface';
 
 export function hasPermission(command: IBotCommand, message: Message): boolean {
     // Verifique se o comando está sendo usado em um servidor

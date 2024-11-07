@@ -2,9 +2,24 @@ import { Client, GatewayIntentBits, Collection } from 'discord.js';
 import { loadCommands } from './bot/loader';
 import { hasPermission } from './bot/permissions';
 import dotenv from 'dotenv';
-import { IBotCommand } from './bot/IBotCommand';
+import { IBotCommand } from './bot/botcommand.interface';
+import mongoose from 'mongoose';
 
 dotenv.config();
+
+
+const mongoUri = process.env.MONGO_URI;
+if (!mongoUri) {
+    console.error('MONGO_URI não está definido no arquivo .env');
+    process.exit(1); // Encerra o processo se a URI não estiver configurada
+}
+
+mongoose.connect(mongoUri)
+    .then(() => console.log('Conectado ao MongoDB'))
+    .catch(err => {
+        console.error('Erro ao conectar ao MongoDB:', err);
+        process.exit(1); // Encerra o processo em caso de falha na conexão
+    });
 
 interface ExtendedClient extends Client {
     commands: Collection<string, any>;

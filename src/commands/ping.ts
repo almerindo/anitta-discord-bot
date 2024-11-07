@@ -1,5 +1,5 @@
 import { Message } from 'discord.js';
-import { IBotCommand } from '../bot/IBotCommand';
+import { IBotCommand } from '../bot/botcommand.interface';
 
 export const command: IBotCommand = {
     name: 'ping',

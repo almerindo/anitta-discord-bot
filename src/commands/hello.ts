@@ -1,10 +1,11 @@
 import { Message } from 'discord.js';
-import { IBotCommand } from '../bot/IBotCommand';
+import { IBotCommand } from '../bot/botcommand.interface';
+import { randomMessage } from '../bot/messages';
 
 export const command: IBotCommand = {
     name: 'hello',
     description: 'Verifica o cargo do usuário e responde de acordo.',
-    allowedBy: new Set(['staff', 'oreia-seca']),
+    allowedBy: new Set(['staff', 'oreia-seca', 'bug-catcher']),
 
     async execute(message: Message, args: string[]) {
         if (!message.member) {
@@ -18,8 +19,8 @@ export const command: IBotCommand = {
         if (allowedRoles.has('all') || roles.some(role => allowedRoles.has(role.name))) {
             if (roles.some(role => role.name === 'staff')) {
                 message.reply('Hello! Todo poderoso staff!');
-            } else if (roles.some(role => role.name === 'oreia-seca')) {
-                message.reply(`Sai daí 'oreia-seca'! Você precisa ganhar algumas credenciais primeiro para falar comigo!`);
+            } else if (roles.some(role => ['oreia-seca', 'bug-catcher'].includes(role.name))) {
+                message.reply(randomMessage());
             }
         } else {
             message.reply('Você não possui permissão para usar este comando.');
