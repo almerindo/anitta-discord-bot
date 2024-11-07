@@ -3,6 +3,7 @@ import { CacheType, CommandInteraction, CommandInteractionOptionResolver, SlashC
 import { IBotSlashCommand } from '../bot/botcommand.interface';
 import { TodoService } from '../services/todo/todo.service';
 import { randomMessage } from '../bot/messages';
+import { ETodoStatus } from '../services/todo/models/todo.model';
 
 const todoService = new TodoService();
 
@@ -37,12 +38,10 @@ export const command: IBotSlashCommand = {
         try {
             switch (subcommand) {
                 case 'add':
-                    // Adiciona uma tarefa, com opção de adicionar para outro usuário se permitido
                     const codeAdd = interaction.options.get('code', true).value as string;
                     const descriptionAdd = interaction.options.get('description', true).value as string;
                     const targetUserId = interaction.options.get('user')?.value as string;
 
-                    // Se o usuário especifica outro usuário, verifica permissão
                     if (targetUserId && !hasPermission(['staff', 'bug-catcher'])) {
                         return interaction.followUp({
                             content: 'Você não tem permissão para adicionar uma tarefa para outro usuário.',
@@ -50,7 +49,6 @@ export const command: IBotSlashCommand = {
                         });
                     }
 
-                    // Define o usuário alvo e nome para a tarefa
                     const targetUser = targetUserId || userId;
                     const targetUsername = targetUserId
                         ? (await interaction.guild?.members.fetch(targetUserId))?.user.username || 'Usuário Desconhecido'
@@ -62,7 +60,6 @@ export const command: IBotSlashCommand = {
                         ephemeral: true,
                     });
 
-                    // Enviar mensagem privada ao usuário alvo se a tarefa foi adicionada por outro usuário
                     if (targetUserId && targetUserId !== userId) {
                         const targetUserMember = await interaction.guild?.members.fetch(targetUserId);
                         if (targetUserMember) {
@@ -141,6 +138,25 @@ export const command: IBotSlashCommand = {
                     await interaction.followUp({ content: response, ephemeral: true });
                     break;
 
+                case 'status':
+                    const codeStatus = interaction.options.get('code', true).value as string;
+                    const newStatus = interaction.options.get('status', true).value as string as ETodoStatus;
+
+                    if (!Object.values(ETodoStatus).includes(newStatus)) {
+                        return interaction.followUp({ content: 'Status inválido. Utilize `todo`, `doing` ou `done`.', ephemeral: true });
+                    }
+
+                    const updatedStatusTodo = await todoService.updateTodoStatus(userId, codeStatus, newStatus);
+                    if (!updatedStatusTodo) {
+                        await interaction.followUp({ content: 'Tarefa não encontrada ou você não tem permissão para atualizá-la.', ephemeral: true });
+                    } else {
+                        await interaction.followUp({
+                            content: `Status da tarefa atualizado com sucesso para ${newStatus}!`,
+                            ephemeral: true,
+                        });
+                    }
+                    break;
+
                 default:
                     await interaction.followUp({ content: 'Comando inválido.', ephemeral: true });
             }
@@ -168,7 +184,7 @@ export const command: IBotSlashCommand = {
                 .addUserOption(option =>
                     option.setName('user')
                         .setDescription('Usuário para quem a tarefa será adicionada')
-                        .setRequired(false))) // Opcional, apenas para staff e bug-catcher
+                        .setRequired(false)))
         .addSubcommand(subcommand =>
             subcommand
                 .setName('get')
@@ -204,5 +220,22 @@ export const command: IBotSlashCommand = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('stats')
-                .setDescription('Mostra estatísticas das tarefas por status')),
+                .setDescription('Mostra estatísticas das tarefas por status'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('status')
+                .setDescription('Atualiza o status de uma tarefa')
+                .addStringOption(option =>
+                    option.setName('code')
+                        .setDescription('Código da tarefa')
+                        .setRequired(true))
+                .addStringOption(option =>
+                    option.setName('status')
+                        .setDescription('Novo status da tarefa (todo, doing, done)')
+                        .setRequired(true)
+                        .addChoices(
+                            { name: 'todo', value: ETodoStatus.TODO },
+                            { name: 'doing', value: ETodoStatus.DOING },
+                            { name: 'done', value: ETodoStatus.DONE }
+                        )))
 };
