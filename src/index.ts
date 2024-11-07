@@ -1,24 +1,25 @@
 import { Client, GatewayIntentBits, Collection } from 'discord.js';
-import { loadCommands } from './bot/loader';
-import { hasPermission } from './bot/permissions';
 import dotenv from 'dotenv';
-import { IBotCommand } from './bot/botcommand.interface';
+import { loadCommands, loadSlashCommands } from './bot/loader';
 import mongoose from 'mongoose';
 
 dotenv.config();
 
-
 const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-    console.error('MONGO_URI não está definido no arquivo .env');
-    process.exit(1); // Encerra o processo se a URI não estiver configurada
+const clientId = process.env.CLIENT_ID as string;
+const guildId = process.env.GUILD_ID as string;
+const token = process.env.DISCORD_TOKEN as string;
+
+if (!mongoUri || !clientId || !guildId || !token) {
+    console.error('Alguma variável de ambiente necessária não está definida no arquivo .env');
+    process.exit(1);
 }
 
 mongoose.connect(mongoUri)
     .then(() => console.log('Conectado ao MongoDB'))
     .catch(err => {
         console.error('Erro ao conectar ao MongoDB:', err);
-        process.exit(1); // Encerra o processo em caso de falha na conexão
+        process.exit(1);
     });
 
 interface ExtendedClient extends Client {
@@ -35,41 +36,34 @@ const client: ExtendedClient = new Client({
 
 client.commands = new Collection();
 
-client.once('ready', () => {
-    console.log(`Bot is ready as ${client.user?.tag}!`);
+client.once('ready', async () => {
+    console.log(`Bot conectado como ${client.user?.tag}`);
+
+    // Carregar comandos prefixados e adicionar ao cliente
+    await loadCommands(client);
+
+    // Registrar Slash Commands
+    await loadSlashCommands(client, clientId, guildId, token);
 });
 
-// Defina o prefixo para os comandos
-const prefix = '!';
+client.on('interactionCreate', async (interaction) => {
+    if (!interaction.isCommand()) return;
 
-// Carregar comandos dinamicamente
-loadCommands(client);
 
-client.on('messageCreate', async (message) => {
-    console.info(`Message: ${message.content}`);
 
-    if (message.author.bot) return;
+    const command = client.commands.get(interaction.commandName);
 
-    if (!message.content.startsWith(prefix)) return;
+    console.info({commands: client.commands, commandName: interaction.commandName, command});
 
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift()?.toLowerCase() as string;
+    if (!command) return;
 
-    console.info(`Command: ${commandName}`);
-    const command = client.commands.get(commandName) as IBotCommand;
-
-    if (command) {
-        if (hasPermission(command, message)) {
-            try {
-                await command.execute(message, args);
-            } catch (error) {
-                console.error(error);
-                message.reply('Ocorreu um erro ao executar o comando.');
-            }
-        } else {
-            message.reply('Você não possui permissão para usar este comando.');
-        }
+    try {
+        console.info(`Comando ${command.name} foi executado por ${interaction.user.tag}`);
+        await command.execute(interaction);
+    } catch (error) {
+        console.error('Erro ao executar o Slash Command:', error);
+        await interaction.reply({ content: 'Ocorreu um erro ao executar o comando.', ephemeral: true });
     }
 });
 
-client.login(process.env.DISCORD_TOKEN);
+client.login(token);
