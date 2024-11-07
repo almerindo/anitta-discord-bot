@@ -67,3 +67,4 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(token);
+//TODO: transformar todas as tasks em slashcommand

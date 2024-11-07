@@ -1,34 +1,53 @@
 // ./src/commands/task-get.ts
-import { Message } from 'discord.js';
-import { IBotCommand } from '../../bot/botcommand.interface';
+import { CacheType, CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { IBotSlashCommand } from '../../bot/botcommand.interface';
 import { TodoService } from '../../services/todo/todo.service';
 
 const todoService = new TodoService();
 
-export const command: IBotCommand = {
-    group: 'todo',
-    name: 'task-get',
-    description: 'Mostra os detalhes de uma tarefa específica pelo código.',
-    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca', ]),
+const group = 'todo';
+const name = 'task-get';
+const description = 'Mostra os detalhes de uma tarefa específica pelo código.';
+
+export const command: IBotSlashCommand = {
+    group,
+    name,
+    description,
+    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca']), // Define as roles permitidas
     usage: `
-**!task-get** \`<código>\`
+**/task-get** \`<código>\`
 - Exibe os detalhes de uma tarefa específica pelo código.
-- **Exemplo**: \`!task-get T123\`
+- **Exemplo**: \`/task-get T123\`
 `,
 
-    async execute(message: Message, args: string[]) {
-        const [code] = args;
+    async execute(interaction: CommandInteraction<CacheType>) {
+        const code = interaction.options.get('code')?.value as string;
 
         if (!code) {
-            return message.reply('Uso: !task-get <código>');
+            await interaction.reply({ content: `Uso correto do comando: ${command.usage}`, ephemeral: true });
+            return;
         }
 
-        const todo = await todoService.getTodoByCode(message.author.id, code);
+        await interaction.deferReply({ ephemeral: true }); // Resposta efêmera para o usuário
+
+        const todo = await todoService.getTodoByCode(interaction.user.id, code);
 
         if (!todo) {
-            return message.reply('Tarefa não encontrada.');
+            await interaction.followUp({ content: 'Tarefa não encontrada.', ephemeral: true });
+        } else {
+            await interaction.followUp({
+                content: `Tarefa: ${todo.description} - Status: ${todo.status}`,
+                ephemeral: true,
+            });
         }
-
-        message.reply(`Tarefa: ${todo.description} - Status: ${todo.status}`);
     },
+
+    slashCommand: new SlashCommandBuilder()
+        .setName(name)
+        .setDescription(description)
+        .addStringOption(option =>
+            option.setName('code')
+                .setDescription('Código da tarefa a ser exibida')
+                .setRequired(true)
+        ),
 };

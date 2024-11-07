@@ -1,51 +1,86 @@
 // ./src/commands/task-add-for-user.ts
-import { Message } from 'discord.js';
-import { IBotCommand } from '../../bot/botcommand.interface';
+import { CacheType, CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { IBotSlashCommand } from '../../bot/botcommand.interface';
 import { TodoService } from '../../services/todo/todo.service';
 
 const todoService = new TodoService();
 
-export const command: IBotCommand = {
-    group: 'todo',
-    name: 'task-add-for-user',
-    description: 'Adiciona uma tarefa para outro usuário especificado.',
-    allowedBy: new Set(['staff', 'bug-catcher']),
+const group = 'todo';
+const name = 'task-add-for-user';
+const description = 'Adiciona uma tarefa para outro usuário especificado. (Apenas para staff e bug-catcher)';
+const allowedBy = new Set(['staff', 'bug-catcher']);
+// Função auxiliar para verificar permissões usando allowedBy
+function hasAllowedRole(interaction: CommandInteraction, allowedRoles: Set<string>): boolean {
+    const memberRoles = interaction.member?.roles as any;
+    return memberRoles?.cache.some((role: any) => allowedRoles.has(role.name));
+}
+
+export const command: IBotSlashCommand = {
+    group,
+    name,
+    description,
+    allowedBy,
     usage: `
-**!task-add-for-user** \`<@userId> <código> <descrição>\`
+**/task-add-for-user** \`<@userId> <código> <descrição>\`
 - (Apenas para staff e bug-catcher) Adiciona uma nova tarefa para o usuário especificado.
-- **Exemplo**: \`!task-add-for-user @user123 T456 Revisar documento final\`
+- **Exemplo**: \`/task-add-for-user @user123 T456 Revisar documento final\`
 `,
 
-    async execute(message: Message, args: string[]) {
-        // Validação de permissões
-        if (!message.member?.roles.cache.some(role => ['staff', 'bug-catcher'].includes(role.name))) {
-            return message.reply('Você não tem permissão para usar este comando.');
+    async execute(interaction: CommandInteraction<CacheType>) {
+        // Verifica se o usuário possui uma das permissões necessárias
+        if (!hasAllowedRole(interaction, allowedBy)) {
+            await interaction.reply({
+                content: 'Você não tem permissão para usar este comando.',
+                ephemeral: true
+            });
+            return;
         }
 
-        const [userIdMention, code, ...descriptionParts] = args;
-        const description = descriptionParts.join(' ');
+        // Responder de forma efêmera para o usuário
+        await interaction.deferReply({ ephemeral: true });
 
-        // Verificação de formato de menção para userId
-        if (!userIdMention || !userIdMention.startsWith('<@') || !userIdMention.endsWith('>')) {
-            return message.reply('Você precisa digitar @username como userId.');
+        const userMention = interaction.options.get('user')?.user;
+        const code = interaction.options.get('code')?.value as string;
+        const description = interaction.options.get('description')?.value as string;
+
+        // Verificação de userMention
+        if (!userMention) {
+            await interaction.followUp({ content: 'Usuário não encontrado ou inválido.', ephemeral: true });
+            return;
         }
 
-        const userId = userIdMention.slice(2, -1); // Extrai o userId removendo "<@" e ">"
+        const userId = userMention.id;
+        const username = userMention.username;
 
         if (!code || !description) {
-            return message.reply('Uso: !task-add-for-user <@userId> <código> <descrição>');
-        }
-
-        // Pega o nome de usuário usando o userId
-        const targetUser = await message.guild?.members.fetch(userId);
-        const username = targetUser?.user.username;
-
-        if (!username) {
-            return message.reply('Usuário não encontrado.');
+            await interaction.followUp({ content: `Uso correto do comando: ${command.usage}`, ephemeral: true });
+            return;
         }
 
         // Cria a tarefa para o usuário especificado
         const todo = await todoService.addTodo(userId, username, code, description);
-        message.reply(`Tarefa adicionada com sucesso para ${username}! Código: ${todo.code}, Descrição: ${todo.description}`);
+        await interaction.followUp({
+            content: `Tarefa adicionada com sucesso para ${username}! Código: ${todo.code}, Descrição: ${todo.description}`,
+            ephemeral: true,
+        });
     },
+
+    slashCommand: new SlashCommandBuilder()
+        .setName(name)
+        .setDescription(description)
+        .addUserOption(option =>
+            option.setName('user')
+                .setDescription('Usuário para quem a tarefa será adicionada')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('code')
+                .setDescription('Código único para identificar a tarefa')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('description')
+                .setDescription('Resumo do que a tarefa envolve')
+                .setRequired(true)
+        ),
 };

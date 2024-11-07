@@ -1,38 +1,49 @@
 // ./src/commands/task-stats.ts
-import { Message } from 'discord.js';
-import { IBotCommand } from '../../bot/botcommand.interface';
+import { CacheType, CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { IBotSlashCommand } from '../../bot/botcommand.interface';
 import { TodoService } from '../../services/todo/todo.service';
 import { randomMessage } from '../../bot/messages';
 
 const todoService = new TodoService();
 
-export const command: IBotCommand = {
-    group: 'todo',
-    name: 'task-stats',
-    description: 'Mostra estatísticas das tarefas por usuário, agrupadas por status.',
-    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca']),
+const group = 'todo';
+const name = 'task-stats';
+const description = 'Mostra estatísticas das tarefas por usuário, agrupadas por status.';
+
+export const command: IBotSlashCommand = {
+    group,
+    name,
+    description,
+    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca']), // Define as roles permitidas
     usage: `
-**!task-stats**
+**/task-stats**
 - Mostra estatísticas das tarefas agrupadas por status.
-- **Exemplo**: \`!task-stats\`
+- **Exemplo**: \`/task-stats\`
 `,
 
-    async execute(message: Message) {
+    async execute(interaction: CommandInteraction<CacheType>) {
+        // Responder de forma efêmera
+        await interaction.deferReply({ ephemeral: true });
+
         let statistics;
 
-        if (message.member?.roles.cache.some(role => role.name === 'staff')) {
+        // Verificação de roles com acesso ao cache de roles da guilda
+        const memberRoles = interaction.guild?.members.cache.get(interaction.user.id)?.roles.cache;
+        if (memberRoles?.some(role => role.name === 'staff')) {
             // Se for staff, exibe estatísticas de todos os usuários
             statistics = await todoService.getTaskStatistics();
-        } else if (message.member?.roles.cache.some(role => ['oreia-seca', 'bug-catcher'].includes(role.name))) {
+        } else if (memberRoles?.some(role => ['oreia-seca', 'bug-catcher'].includes(role.name))) {
             // Se for oreia-seca ou bug-catcher, exibe apenas estatísticas do autor
-            statistics = await todoService.getTaskStatistics(message.author.id);
+            statistics = await todoService.getTaskStatistics(interaction.user.id);
         } else {
             // Para outros cargos, exibe uma mensagem sarcástica
-            return message.reply(randomMessage());
+            await interaction.followUp({ content: randomMessage(), ephemeral: true });
+            return;
         }
 
-        if (statistics.length === 0) {
-            return message.reply('Não há tarefas registradas.');
+        if (!statistics || statistics.length === 0) {
+            await interaction.followUp({ content: 'Não há tarefas registradas.', ephemeral: true });
+            return;
         }
 
         let response = 'Estatísticas das tarefas:\n';
@@ -43,6 +54,10 @@ export const command: IBotCommand = {
             }
         }
 
-        message.reply(response);
+        await interaction.followUp({ content: response, ephemeral: true });
     },
+
+    slashCommand: new SlashCommandBuilder()
+        .setName(name)
+        .setDescription(description),
 };

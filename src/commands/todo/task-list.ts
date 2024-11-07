@@ -1,34 +1,31 @@
 // ./src/commands/task-list.ts
-import { Message } from 'discord.js';
-import { IBotCommand } from '../../bot/botcommand.interface';
+import { CacheType, CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { IBotSlashCommand } from '../../bot/botcommand.interface';
 import { TodoService } from '../../services/todo/todo.service';
 
 const todoService = new TodoService();
 
-export const command: IBotCommand = {
+export const command: IBotSlashCommand = {
     group: 'todo',
     name: 'task-list',
-    description: 'Lista todas as tarefas do usuário.',
-    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca', ]),
+    description: 'Lista todas as suas tarefas TODO.',
     usage: `
-**!task-list**
-- Lista todas as tarefas associadas ao usuário.
-- **Exemplo**: \`!task-list\`
+**/task-list**
+- Lista todas as tarefas associadas à sua conta.
+- **Exemplo**: \`/task-list\`
 `,
 
-    async execute(message: Message) {
-      console.info(message.author);
+    async execute(interaction: CommandInteraction<CacheType>) {
+        console.info(`Comando task-list foi executado por ${interaction.user.tag}`);
+        await interaction.deferReply({ ephemeral: true });
 
-        const todos = await todoService.getTodos(message.author.id);
+        const todos = await todoService.getTodos(interaction.user.id);
+        const todoList = todos.map(todo => `Código: ${todo.code}, Descrição: ${todo.description}, Status: ${todo.status}`).join('\n') || 'Nenhuma tarefa encontrada.';
 
-        if (todos.length === 0) {
-            return message.reply('Você não tem tarefas pendentes.');
-        }
-
-        const todoList = todos
-            .map(todo => `${todo.code} - ${todo.description} [${todo.status}]`)
-            .join('\n');
-
-        message.reply(`Suas tarefas:\n${todoList}`);
+        await interaction.followUp({ content: `Suas tarefas:\n${todoList}`, ephemeral: true });
     },
+
+    slashCommand: new SlashCommandBuilder()
+        .setName('task-list')
+        .setDescription('Lista todas as suas tarefas TODO'),
 };

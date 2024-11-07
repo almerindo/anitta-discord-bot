@@ -1,35 +1,64 @@
 // ./src/commands/task-text-update.ts
-import { Message } from 'discord.js';
-import { IBotCommand } from '../../bot/botcommand.interface';
+import { CacheType, CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { IBotSlashCommand } from '../../bot/botcommand.interface';
 import { TodoService } from '../../services/todo/todo.service';
 
 const todoService = new TodoService();
 
-export const command: IBotCommand = {
-    group: 'todo',
-    name: 'task-text-update',
-    description: 'Atualiza o texto (descrição) de uma tarefa específica pelo código.',
-    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca', ]),
+const group = 'todo';
+const name = 'task-text-update';
+const description = 'Atualiza o texto (descrição) de uma tarefa específica pelo código.';
+
+export const command: IBotSlashCommand = {
+    group,
+    name,
+    description,
+    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca']), // Define as roles permitidas
     usage: `
-**!task-text-update** \`<código> <nova descrição>\`
+**/task-text-update** \`<código> <nova descrição>\`
 - Atualiza o texto (descrição) de uma tarefa específica.
-- **Exemplo**: \`!task-text-update T123 Corrigir erros de digitação\`
+- **Exemplo**: \`/task-text-update T123 Corrigir erros de digitação\`
 `,
 
-    async execute(message: Message, args: string[]) {
-        const [code, ...newDescriptionParts] = args;
-        const newDescription = newDescriptionParts.join(' ');
+    async execute(interaction: CommandInteraction<CacheType>) {
+        const code = interaction.options.get('code')?.value as string;
+        const newDescription = interaction.options.get('description')?.value as string;
 
+        // Verifica se todos os argumentos foram fornecidos
         if (!code || !newDescription) {
-            return message.reply('Uso: !task-text-update <código> <nova descrição>');
+            await interaction.reply({ content: `Uso correto do comando: ${command.usage}`, ephemeral: true });
+            return;
         }
 
-        const updatedTodo = await todoService.updateTodoText(message.author.id, code, newDescription);
+        // Responder de forma efêmera
+        await interaction.deferReply({ ephemeral: true });
+
+        const updatedTodo = await todoService.updateTodoText(interaction.user.id, code, newDescription);
 
         if (!updatedTodo) {
-            return message.reply('Tarefa não encontrada ou você não tem permissão para atualizá-la.');
+            await interaction.followUp({
+                content: 'Tarefa não encontrada ou você não tem permissão para atualizá-la.',
+                ephemeral: true,
+            });
+        } else {
+            await interaction.followUp({
+                content: `Descrição da tarefa atualizada com sucesso! Nova descrição: ${updatedTodo.description}`,
+                ephemeral: true,
+            });
         }
-
-        message.reply(`Descrição da tarefa atualizada com sucesso! Nova descrição: ${updatedTodo.description}`);
     },
+
+    slashCommand: new SlashCommandBuilder()
+        .setName(name)
+        .setDescription(description)
+        .addStringOption(option =>
+            option.setName('code')
+                .setDescription('Código da tarefa a ser atualizada')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('description')
+                .setDescription('Nova descrição para a tarefa')
+                .setRequired(true)
+        ),
 };

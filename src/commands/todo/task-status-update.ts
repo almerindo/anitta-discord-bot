@@ -1,35 +1,60 @@
-// ./src/commands/task-update.ts
-import { Message } from 'discord.js';
-import { IBotCommand } from '../../bot/botcommand.interface';
+// ./src/commands/task-update-status.ts
+import { CacheType, CommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { IBotSlashCommand } from '../../bot/botcommand.interface';
 import { TodoService } from '../../services/todo/todo.service';
 import { ETodoStatus } from '../../services/todo/models/todo.model';
 
 const todoService = new TodoService();
 
-export const command: IBotCommand = {
+export const command: IBotSlashCommand = {
     group: 'todo',
-    name: 'task-status-update',
-    description: 'Atualiza o status de uma tarefa para todo, doing ou done.',
-    allowedBy: new Set(['staff', 'bug-catcher', 'oreia-seca', ]),
+    name: 'task-update-status',
+    description: 'Atualiza o status de uma tarefa específica.',
     usage: `
-**!task-status-update** \`<código> <todo|doing|done>\`
-- Atualiza o status de uma tarefa específica.
-- **Exemplo**: \`!task-status-update T123 done\`
+**/task-update-status** \`<código> <status>\`
+- Atualiza o status de uma tarefa.
+- **Exemplo**: \`/task-update-status T123 done\`
 `,
 
-    async execute(message: Message, args: string[]) {
-        const [code, status] = args;
+    async execute(interaction: CommandInteraction<CacheType>) {
+        console.info(`Comando task-update-status foi executado por ${interaction.user.tag}`);
+        await interaction.deferReply({ ephemeral: true });
 
-        if (!code || !status || !Object.values(ETodoStatus).includes(status as ETodoStatus)) {
-            return message.reply('Uso: !task-update <código> <todo|doing|done>');
+        const code = interaction.options.get('code')?.value as string;
+        const status = interaction.options.get('status')?.value as ETodoStatus;
+
+        if (!code || !status) {
+            await interaction.followUp({ content: `Uso correto do comando: ${command.usage}`, ephemeral: true });
+            return;
         }
 
-        const todo = await todoService.updateTodoStatus(message.author.id, code, status as ETodoStatus);
-
-        if (!todo) {
-            return message.reply('Tarefa não encontrada.');
+        const updatedTodo = await todoService.updateTodoStatus(interaction.user.id, code, status);
+        if (updatedTodo) {
+            await interaction.followUp({
+                content: `Status da tarefa atualizado com sucesso! Código: ${updatedTodo.code}, Novo Status: ${updatedTodo.status}`,
+                ephemeral: true,
+            });
+        } else {
+            await interaction.followUp({ content: `Tarefa não encontrada com o código ${code}.`, ephemeral: true });
         }
-
-        message.reply(`Tarefa atualizada: ${todo.description} - Status: ${todo.status}`);
     },
+
+    slashCommand: new SlashCommandBuilder()
+        .setName('task-update-status')
+        .setDescription('Atualiza o status de uma tarefa específica')
+        .addStringOption(option =>
+            option.setName('code')
+                .setDescription('Código da tarefa a ser atualizada')
+                .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('status')
+                .setDescription('Novo status da tarefa')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'todo', value: ETodoStatus.TODO },
+                    { name: 'doing', value: ETodoStatus.DOING },
+                    { name: 'done', value: ETodoStatus.DONE }
+                )
+        ),
 };
