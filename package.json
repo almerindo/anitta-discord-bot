@@ -25,6 +25,7 @@
     "build": "tsc && find dist -name '*.d.ts' -type f -delete",
     "dev": "ts-node-dev --ignore-watch node_modules src/index.ts",
     "test": "jest --no-cache",
+    "stop": "ps aux | grep 'node dist/index.js' | grep -v grep | awk '{print $2}' | xargs kill -9",
     "start": "node dist/index.js"
   },
   "dependencies": {
