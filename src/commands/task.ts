@@ -139,23 +139,28 @@ export const command: IBotSlashCommand = {
                     break;
 
                 case 'status':
-                    const codeStatus = interaction.options.get('code', true).value as string;
-                    const newStatus = interaction.options.get('status', true).value as string as ETodoStatus;
+                  const codeStatus = interaction.options.get('code', true).value as string;
+                  const newStatus = interaction.options.get('status', true).value as ETodoStatus;
+                  const statusTargetUserId = interaction.options.get('user',false)?.value as string;
 
-                    if (!Object.values(ETodoStatus).includes(newStatus)) {
-                        return interaction.followUp({ content: 'Status inválido. Utilize `todo`, `doing` ou `done`.', ephemeral: true });
-                    }
+                  // Verifica se é permitido atualizar status de outro usuário
+                  const statusTargetUser = statusTargetUserId && hasPermission(['staff', 'bug-catcher']) ? statusTargetUserId : userId;
 
-                    const updatedStatusTodo = await todoService.updateTodoStatus(userId, codeStatus, newStatus);
-                    if (!updatedStatusTodo) {
-                        await interaction.followUp({ content: 'Tarefa não encontrada ou você não tem permissão para atualizá-la.', ephemeral: true });
-                    } else {
-                        await interaction.followUp({
-                            content: `Status da tarefa atualizado com sucesso para ${newStatus}!`,
-                            ephemeral: true,
-                        });
-                    }
-                    break;
+                  if (!Object.values(ETodoStatus).includes(newStatus)) {
+                      return interaction.followUp({ content: 'Status inválido. Utilize `todo`, `doing` ou `done`.', ephemeral: true });
+                  }
+
+                  const updatedStatusTodo = await todoService.updateTodoStatus(statusTargetUserId, codeStatus, newStatus);
+                  if (!updatedStatusTodo) {
+                      await interaction.followUp({ content: 'Tarefa não encontrada ou você não tem permissão para atualizá-la.', ephemeral: true });
+                  } else {
+                      await interaction.followUp({
+                          content: `Status da tarefa atualizado com sucesso para ${newStatus}!`,
+                          ephemeral: true,
+                      });
+                  }
+                  break;
+
 
                 default:
                     await interaction.followUp({ content: 'Comando inválido.', ephemeral: true });
