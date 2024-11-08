@@ -144,13 +144,14 @@ export const command: IBotSlashCommand = {
                   const statusTargetUserId = interaction.options.get('user',false)?.value as string;
 
                   // Verifica se é permitido atualizar status de outro usuário
-                  const statusTargetUser = statusTargetUserId && hasPermission(['staff', 'bug-catcher']) ? statusTargetUserId : userId;
+                const statusTargetUser = statusTargetUserId && hasPermission(['staff', 'bug-catcher']) ? statusTargetUserId : (() => { throw new Error("Você não tem permissão para atualizar o status de outra pessoa."); })();
+
 
                   if (!Object.values(ETodoStatus).includes(newStatus)) {
                       return interaction.followUp({ content: 'Status inválido. Utilize `todo`, `doing` ou `done`.', ephemeral: true });
                   }
 
-                  const updatedStatusTodo = await todoService.updateTodoStatus(statusTargetUserId, codeStatus, newStatus);
+                  const updatedStatusTodo = await todoService.updateTodoStatus(statusTargetUser, codeStatus, newStatus);
                   if (!updatedStatusTodo) {
                       await interaction.followUp({ content: 'Tarefa não encontrada ou você não tem permissão para atualizá-la.', ephemeral: true });
                   } else {
