@@ -28,7 +28,6 @@ export const command: IBotSlashCommand = {
         const userId = interaction.user.id;
         const username = interaction.user.username;
 
-        // Verifica as permissões para certos comandos
         const hasPermission = (roles: string[]) => {
             const memberRoles = interaction.member?.roles;
             if (!memberRoles || !('cache' in memberRoles)) return false;
@@ -139,29 +138,61 @@ export const command: IBotSlashCommand = {
                     break;
 
                 case 'status':
-                  const codeStatus = interaction.options.get('code', true).value as string;
-                  const newStatus = interaction.options.get('status', true).value as ETodoStatus;
-                  const statusTargetUserId = interaction.options.get('user',false)?.value as string;
+                    const codeStatus = interaction.options.get('code', true).value as string;
+                    const newStatus = interaction.options.get('status', true).value as ETodoStatus;
+                    const statusTargetUserId = interaction.options.get('user', false)?.value as string;
 
-                  // Verifica se é permitido atualizar status de outro usuário
-                const statusTargetUser = statusTargetUserId && hasPermission(['staff', 'bug-catcher']) ? statusTargetUserId : (() => { throw new Error("Você não tem permissão para atualizar o status de outra pessoa."); })();
+                    const statusTargetUser = statusTargetUserId && hasPermission(['staff', 'bug-catcher']) ? statusTargetUserId : userId;
 
+                    if (!Object.values(ETodoStatus).includes(newStatus)) {
+                        return interaction.followUp({ content: 'Status inválido. Utilize `todo`, `doing` ou `done`.', ephemeral: true });
+                    }
 
-                  if (!Object.values(ETodoStatus).includes(newStatus)) {
-                      return interaction.followUp({ content: 'Status inválido. Utilize `todo`, `doing` ou `done`.', ephemeral: true });
-                  }
+                    const updatedStatusTodo = await todoService.updateTodoStatus(statusTargetUser, codeStatus, newStatus);
+                    if (!updatedStatusTodo) {
+                        await interaction.followUp({ content: 'Tarefa não encontrada ou você não tem permissão para atualizá-la.', ephemeral: true });
+                    } else {
+                        await interaction.followUp({
+                            content: `Status da tarefa atualizado com sucesso para ${newStatus}!`,
+                            ephemeral: true,
+                        });
+                    }
+                    break;
 
-                  const updatedStatusTodo = await todoService.updateTodoStatus(statusTargetUser, codeStatus, newStatus);
-                  if (!updatedStatusTodo) {
-                      await interaction.followUp({ content: 'Tarefa não encontrada ou você não tem permissão para atualizá-la.', ephemeral: true });
-                  } else {
-                      await interaction.followUp({
-                          content: `Status da tarefa atualizado com sucesso para ${newStatus}!`,
-                          ephemeral: true,
-                      });
-                  }
-                  break;
+                case 'list':
+                    const isStaffOrBugCatcher = hasPermission(['staff', 'bug-catcher']);
+                    const visible = interaction.options.get('visible',false)?.value || false;
 
+                    let tasks;
+
+                    if (isStaffOrBugCatcher) {
+                        tasks = await todoService.getTodosGroupedByUser();
+                    } else {
+                        tasks = await todoService.getTodos(userId);
+                    }
+
+                    if (!tasks || tasks.length === 0) {
+                        await interaction.followUp({ content: 'Não há tarefas para listar.', ephemeral: !visible });
+                        return;
+                    }
+
+                    let listResponse = 'Lista de Tarefas:\n';
+
+                    if (isStaffOrBugCatcher) {
+                        for (const user of tasks) {
+                            listResponse += `\n**Usuário**: ${user.username || user.userId}\n`;
+                            for (const task of user.tasks) {
+                                listResponse += ` - **Código**: ${task.code} | **Status**: ${task.status} | **Descrição**: ${task.description}\n`;
+                            }
+                        }
+                    } else {
+                        for (const task of tasks) {
+                            listResponse += ` - **Código**: ${task.code} | **Status**: ${task.status} | **Descrição**: ${task.description}\n`;
+                        }
+                    }
+
+                    await interaction.followUp({ content: listResponse, ephemeral: !visible });
+                    break;
 
                 default:
                     await interaction.followUp({ content: 'Comando inválido.', ephemeral: true });
@@ -244,4 +275,11 @@ export const command: IBotSlashCommand = {
                             { name: 'doing', value: ETodoStatus.DOING },
                             { name: 'done', value: ETodoStatus.DONE }
                         )))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('list')
+                .setDescription('Lista todas as tarefas')
+                .addBooleanOption(option =>
+                    option.setName('visible')
+                        .setDescription('Se verdadeiro, a resposta será visível para todos. Padrão: falso')))
 };
